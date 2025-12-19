@@ -1,263 +1,103 @@
 "use client";
+import React, { useState } from 'react';
+import { db } from '@/lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
+import { Upload, Plus, Trash2 } from 'lucide-react';
 
-import { useEffect, useState } from "react";
-import { 
-  getProducts, 
-  deleteProduct, 
-  createProduct, 
-  updateProduct, 
-  Product 
-} from "@/lib/db/products";
-import { getCategories, Category } from "@/lib/db/categories";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { ImageUpload } from "@/components/admin/ImageUpload";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Plus, Trash2, Edit, X } from "lucide-react";
-import { formatPrice } from "@/lib/utils";
-import { Spinner } from "@/components/ui/Spinner";
+export default function AddProductPage() {
+  const [title, setTitle] = useState('');
+  const [price, setPrice] = useState('');
+  const [category, setCategory] = useState('');
+  const [images, setImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
 
-export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentProduct, setCurrentProduct] = useState<Partial<Product>>({
-    name: "",
-    price: 0,
-    description: "",
-    categoryId: "",
-    images: [],
-    variations: {
-      sizes: [],
-      colors: [],
-      fabrics: []
-    },
-    stock: 0
-  });
+  // Cloudinary Upload Function
+  const handleImageUpload = async (e: any) => {
+    const files = e.target.files;
+    setUploading(true);
+    const uploadedUrls = [];
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+    for (let file of files) {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'My-rent-store'); // Aapka preset name
 
-  const fetchData = async () => {
+      const res = await fetch('https://api.cloudinary.com/v1_1/dec141lqk/image/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      uploadedUrls.push(data.secure_url);
+    }
+
+    setImages([...images, ...uploadedUrls]);
+    setUploading(false);
+  };
+
+  const handleSaveProduct = async () => {
+    if (!title || !price || images.length === 0) return alert("Please fill all fields");
+    
     try {
-      const [productsData, categoriesData] = await Promise.all([
-        getProducts(),
-        getCategories()
-      ]);
-      setProducts(productsData);
-      setCategories(categoriesData);
+      await addDoc(collection(db, "products"), {
+        title,
+        price: Number(price),
+        category,
+        images,
+        created_at: new Date()
+      });
+      alert("Product Added Successfully!");
+      setTitle(''); setPrice(''); setImages([]);
     } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
+      console.error("Error adding product:", error);
     }
   };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const productData = {
-        ...currentProduct,
-        price: Number(currentProduct.price),
-        stock: Number(currentProduct.stock),
-        createdAt: currentProduct.createdAt || Date.now()
-      } as Product; // We assume required fields are present for simplicity or should validate
-
-      if (currentProduct.id) {
-        await updateProduct(currentProduct.id, productData);
-      } else {
-        await createProduct(productData);
-      }
-      
-      await fetchData();
-      setIsEditing(false);
-      resetForm();
-    } catch (error) {
-      console.error("Error saving product:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this product?")) {
-      await deleteProduct(id);
-      await fetchData();
-    }
-  };
-
-  const resetForm = () => {
-    setCurrentProduct({
-      name: "",
-      price: 0,
-      description: "",
-      categoryId: "",
-      images: [],
-      variations: {
-        sizes: [],
-        colors: [],
-        fabrics: []
-      },
-      stock: 0
-    });
-  };
-
-  const handleEdit = (product: Product) => {
-    setCurrentProduct(product);
-    setIsEditing(true);
-  };
-
-  if (loading && !products.length) return <div className="p-8"><Spinner /></div>;
-
-  if (isEditing) {
-    return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{currentProduct.id ? "Edit Product" : "Add Product"}</h1>
-          <Button variant="ghost" onClick={() => { setIsEditing(false); resetForm(); }}>
-            <X className="mr-2 h-4 w-4" /> Cancel
-          </Button>
-        </div>
-
-        <Card>
-          <CardContent className="pt-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                  label="Product Name"
-                  value={currentProduct.name}
-                  onChange={(e) => setCurrentProduct({ ...currentProduct, name: e.target.value })}
-                  required
-                />
-                <Input
-                  label="Price"
-                  type="number"
-                  value={currentProduct.price}
-                  onChange={(e) => setCurrentProduct({ ...currentProduct, price: parseFloat(e.target.value) })}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium">Category</label>
-                <select
-                  className="w-full rounded-md border border-gray-300 p-2"
-                  value={currentProduct.categoryId}
-                  onChange={(e) => setCurrentProduct({ ...currentProduct, categoryId: e.target.value })}
-                  required
-                >
-                  <option value="">Select Category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium">Description</label>
-                <textarea
-                  className="w-full rounded-md border border-gray-300 p-2 h-32"
-                  value={currentProduct.description}
-                  onChange={(e) => setCurrentProduct({ ...currentProduct, description: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium">Images</label>
-                <ImageUpload
-                  images={currentProduct.images || []}
-                  onChange={(images) => setCurrentProduct({ ...currentProduct, images })}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Input
-                  label="Sizes (comma separated)"
-                  value={currentProduct.variations?.sizes?.join(", ")}
-                  onChange={(e) => setCurrentProduct({ 
-                    ...currentProduct, 
-                    variations: { ...currentProduct.variations!, sizes: e.target.value.split(",").map(s => s.trim()) } 
-                  })}
-                />
-                 <Input
-                  label="Colors (comma separated)"
-                  value={currentProduct.variations?.colors?.join(", ")}
-                  onChange={(e) => setCurrentProduct({ 
-                    ...currentProduct, 
-                    variations: { ...currentProduct.variations!, colors: e.target.value.split(",").map(s => s.trim()) } 
-                  })}
-                />
-                 <Input
-                  label="Fabrics (comma separated)"
-                  value={currentProduct.variations?.fabrics?.join(", ")}
-                  onChange={(e) => setCurrentProduct({ 
-                    ...currentProduct, 
-                    variations: { ...currentProduct.variations!, fabrics: e.target.value.split(",").map(s => s.trim()) } 
-                  })}
-                />
-              </div>
-
-              <Input
-                label="Stock"
-                type="number"
-                value={currentProduct.stock}
-                onChange={(e) => setCurrentProduct({ ...currentProduct, stock: parseInt(e.target.value) })}
-              />
-
-              <Button type="submit" className="w-full" isLoading={loading}>
-                Save Product
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Products</h1>
-        <Button onClick={() => setIsEditing(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Add Product
-        </Button>
-      </div>
+    <div className="max-w-4xl mx-auto">
+      <h1 className="text-3xl font-serif mb-8">Add New Product</h1>
+      
+      <div className="bg-white p-8 shadow-sm border border-gray-100 rounded-2xl space-y-6">
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-widest mb-2">Product Title</label>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:border-black" placeholder="e.g. Luxury Lawn Suit" />
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.map((product) => (
-          <Card key={product.id} className="overflow-hidden">
-            <div className="aspect-video relative bg-gray-100">
-              {product.images && product.images[0] ? (
-                <img
-                  src={product.images[0]}
-                  alt={product.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-gray-400">
-                  No Image
-                </div>
-              )}
-            </div>
-            <CardContent className="p-4">
-              <h3 className="font-semibold text-lg">{product.name}</h3>
-              <p className="text-sm text-gray-500 mb-2">{formatPrice(product.price)}</p>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" size="sm" onClick={() => handleEdit(product)}>
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button variant="danger" size="sm" onClick={() => handleDelete(product.id!)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-widest mb-2">Price (Rs.)</label>
+            <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:border-black" placeholder="5000" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-widest mb-2">Category</label>
+            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:border-black">
+              <option value="">Select Category</option>
+              <option value="Women">Women</option>
+              <option value="Men">Men</option>
+              <option value="Kids">Kids</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-widest mb-2">Product Images</label>
+          <div className="flex flex-wrap gap-4 mb-4">
+            {images.map((url, i) => (
+              <div key={i} className="relative w-24 h-24 border rounded-lg overflow-hidden">
+                <img src={url} className="w-full h-full object-cover" />
+                <button onClick={() => setImages(images.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full"><Trash2 className="w-3 h-3" /></button>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+            ))}
+            <label className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-all">
+              <Upload className="w-6 h-6 text-gray-400" />
+              <span className="text-[10px] text-gray-400 mt-1 uppercase font-bold">{uploading ? '...' : 'Upload'}</span>
+              <input type="file" multiple onChange={handleImageUpload} className="hidden" />
+            </label>
+          </div>
+        </div>
+
+        <button onClick={handleSaveProduct} className="w-full bg-black text-white py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-gray-900 transition-all">
+          Create Product
+        </button>
       </div>
     </div>
   );
