@@ -5,7 +5,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-function SearchResults() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q')?.toLowerCase() || '';
   const [results, setResults] = useState<any[]>([]);
@@ -25,7 +25,7 @@ function SearchResults() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-20">
-      <h1 className="text-2xl font-serif mb-10 uppercase tracking-widest">Search Results for: "{query}"</h1>
+      <h1 className="text-2xl font-serif mb-10 uppercase tracking-widest text-black">Results for: "{query}"</h1>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {results.map((p) => (
           <Link href={`/product/${p.id}`} key={p.id} className="group">
@@ -37,15 +37,14 @@ function SearchResults() {
           </Link>
         ))}
       </div>
-      {results.length === 0 && <p className="text-center py-20 text-gray-400 italic uppercase text-xs tracking-widest">No products found.</p>}
     </div>
   );
 }
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div className="py-20 text-center uppercase text-[10px] tracking-widest">Searching...</div>}>
-      <SearchResults />
+    <Suspense fallback={<div className="py-20 text-center uppercase text-[10px]">Searching...</div>}>
+      <SearchContent />
     </Suspense>
   );
 }

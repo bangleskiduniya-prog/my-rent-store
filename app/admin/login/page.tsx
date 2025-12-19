@@ -1,65 +1,30 @@
 "use client";
-
-import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import React, { useState } from 'react';
+import { auth } from '@/lib/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push("/admin/products");
-    } catch (err: unknown) {
-      setError("Invalid email or password.");
-      console.error(err);
-    } finally {
-      setLoading(false);
+      window.location.href = '/admin';
+    } catch (error) {
+      alert("Invalid Credentials");
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle>Admin Login</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <Input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <Input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            {error && <p className="text-sm text-red-500">{error}</p>}
-            <Button type="submit" className="w-full" isLoading={loading}>
-              Login
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <form onSubmit={handleLogin} className="bg-white p-10 rounded-[2rem] shadow-xl max-w-md w-full">
+        <h2 className="text-2xl font-serif font-bold mb-6 text-center">Admin Login</h2>
+        <input type="email" placeholder="Email" className="w-full p-4 bg-gray-50 rounded-xl mb-4 outline-none" onChange={e => setEmail(e.target.value)} />
+        <input type="password" placeholder="Password" className="w-full p-4 bg-gray-50 rounded-xl mb-6 outline-none" onChange={e => setPassword(e.target.value)} />
+        <button type="submit" className="w-full bg-black text-white py-4 rounded-xl font-bold uppercase tracking-widest text-xs">Sign In</button>
+      </form>
     </div>
   );
 }
