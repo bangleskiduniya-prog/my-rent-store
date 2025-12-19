@@ -3,30 +3,34 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-rgb: 255, 255, 255;
+  --primary-gold: #D4AF37;
+  --deep-black: #1A1A1A;
+  --soft-white: #FFFFFF;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-rgb));
-  font-family: var(--font-inter), sans-serif;
+  background-color: var(--soft-white);
+  color: var(--deep-black);
+  font-family: 'Inter', sans-serif;
 }
 
-h1, h2, h3, h4, .font-serif {
-  font-family: var(--font-playfair), serif;
+h1, h2, h3, .font-serif {
+  font-family: 'Playfair Display', serif;
 }
 
-/* Custom Gold Accent for Premium Look */
-.text-gold {
-  color: #D4AF37;
+/* Premium Button Style */
+.btn-premium {
+  @apply bg-black text-white px-8 py-3 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-[#D4AF37] transition-all duration-500 shadow-lg;
 }
 
-.bg-gold {
-  background-color: #D4AF37;
+/* WhatsApp Floating Pulse */
+.whatsapp-pulse {
+  box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7);
+  animation: pulse-green 2s infinite;
 }
 
-/* Smooth Transitions */
-.transition-all {
-  transition: all 0.3s ease-in-out;
+@keyframes pulse-green {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
 }
