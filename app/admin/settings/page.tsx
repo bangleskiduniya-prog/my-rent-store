@@ -1,76 +1,29 @@
 "use client";
+import React from 'react';
 
-import { useEffect, useState } from "react";
-import { getSettings, updateSettings, Settings } from "@/lib/db/settings";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Card, CardContent } from "@/components/ui/Card";
-import { Spinner } from "@/components/ui/Spinner";
-
-export default function SettingsPage() {
-  const [settings, setSettings] = useState<Settings>({
-    storeName: "",
-    whatsappNumber: "",
-  });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const data = await getSettings();
-        setSettings(data);
-      } catch (error) {
-        console.error("Error fetching settings:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSettings();
-  }, []);
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      await updateSettings(settings);
-      alert("Settings saved successfully!");
-    } catch (error) {
-      console.error("Error saving settings:", error);
-      alert("Failed to save settings.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) return <div className="p-8"><Spinner /></div>;
-
+export default function AdminDashboard() {
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      <h1 className="text-3xl font-bold">Store Settings</h1>
-
-      <Card>
-        <CardContent className="pt-6">
-          <form onSubmit={handleSave} className="space-y-6">
-            <Input
-              label="Store Name"
-              value={settings.storeName}
-              onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
-              required
-            />
-            <Input
-              label="WhatsApp Number"
-              value={settings.whatsappNumber}
-              onChange={(e) => setSettings({ ...settings, whatsappNumber: e.target.value })}
-              required
-              placeholder="e.g. 03035958676"
-            />
-            <Button type="submit" isLoading={saving}>
-              Save Changes
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div>
+      <h1 className="text-3xl font-serif mb-8">Dashboard Overview</h1>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 shadow-sm border border-gray-100 rounded-xl">
+          <p className="text-gray-500 text-xs uppercase tracking-widest mb-2">Total Products</p>
+          <h3 className="text-4xl font-serif">--</h3>
+        </div>
+        <div className="bg-white p-6 shadow-sm border border-gray-100 rounded-xl">
+          <p className="text-gray-500 text-xs uppercase tracking-widest mb-2">Total Categories</p>
+          <h3 className="text-4xl font-serif">--</h3>
+        </div>
+        <div className="bg-white p-6 shadow-sm border border-gray-100 rounded-xl">
+          <p className="text-gray-500 text-xs uppercase tracking-widest mb-2">WhatsApp Inquiries</p>
+          <h3 className="text-4xl font-serif">Active</h3>
+        </div>
+      </div>
+      
+      <div className="mt-12 bg-black text-white p-8 rounded-2xl">
+        <h2 className="text-2xl font-serif mb-2">Welcome, Admin!</h2>
+        <p className="text-gray-400 text-sm">Manage your premium store products and settings from here.</p>
+      </div>
     </div>
   );
 }
