@@ -1,105 +1,146 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, limit, getDocs, addDoc } from 'firebase/firestore';
 import { useParams } from 'next/navigation';
-import { Phone, ChevronRight, ShoppingBag, X, CheckCircle2 } from 'lucide-react';
+import { Phone, ChevronRight, ShieldCheck, Truck, Share2, Plus, Minus, ShoppingBag, X, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ProductDetails() {
   const { id } = useParams();
   const [product, setProduct] = useState<any>(null);
+  const [related, setRelated] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
-  const [showForm, setShowForm] = useState(false);
+  const [showOrderForm, setShowOrderForm] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
-
-  // Form State
   const [customer, setCustomer] = useState({ name: '', phone: '', address: '', city: '' });
 
   useEffect(() => {
-    const fetchProduct = async () => {
+    const fetchData = async () => {
       if (!id) return;
       const docSnap = await getDoc(doc(db, "products", id as string));
-      if (docSnap.exists()) setProduct({ id: docSnap.id, ...docSnap.data() });
+      if (docSnap.exists()) {
+        const data = { id: docSnap.id, ...docSnap.data() };
+        setProduct(data);
+        const q = query(collection(db, "products"), where("category", "==", data.category), limit(5));
+        const relSnap = await getDocs(q);
+        setRelated(relSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.id !== id));
+      }
       setLoading(false);
     };
-    fetchProduct();
+    fetchData();
   }, [id]);
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const orderData = {
-        productId: product.id,
-        productTitle: product.title,
-        price: product.price,
-        quantity,
-        variant: selectedVariant || 'Standard',
-        customer,
-        status: 'Pending',
-        created_at: new Date()
+        productTitle: product.title, price: product.price, quantity,
+        variant: selectedVariant || 'Standard', customer, status: 'Pending', created_at: new Date()
       };
-      
-      // 1. Save to Firebase
       await addDoc(collection(db, "orders"), orderData);
-      
-      // 2. Send to WhatsApp
-      const message = `*NEW ORDER PLACED*%0A%0A*Customer:* ${customer.name}%0A*Phone:* ${customer.phone}%0A*Address:* ${customer.address}, ${customer.city}%0A%0A*Product:* ${product.title}%0A*Variant:* ${selectedVariant || 'N/A'}%0A*Quantity:* ${quantity}%0A*Total:* Rs. ${product.price * quantity}`;
-      window.open(`https://wa.me/923035958676?text=${message}`, '_blank');
-      
+      const msg = `*NEW ORDER*%0A*Product:* ${product.title}%0A*Qty:* ${quantity}%0A*Customer:* ${customer.name}%0A*Phone:* ${customer.phone}%0A*Address:* ${customer.address}`;
+      window.open(`https://wa.me/923035958676?text=${msg}`, '_blank');
       setOrderSuccess(true);
-      setShowForm(false);
-    } catch (e) { alert("Order failed. Try again."); }
+      setShowOrderForm(false);
+    } catch (e) { alert("Error placing order"); }
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center uppercase tracking-widest text-xs">Loading...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center uppercase tracking-widest text-[10px]">Loading...</div>;
+  if (!product) return <div className="h-screen flex items-center justify-center">Product Not Found</div>;
 
   return (
     <div className="bg-white min-h-screen pb-20">
-      {/* Product UI (Same as before but with Buy Now logic) */}
-      <div className="max-w-7xl mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-2 gap-12">
-        <div className="aspect-[3/4] bg-gray-50 rounded-3xl overflow-hidden">
-          <img src={product.images?.[0]} className="w-full h-full object-cover" />
+      {/* Breadcrumb */}
+      <div className="max-w-7xl mx-auto px-4 py-6 flex items-center gap-2 text-[10px] uppercase tracking-widest text-gray-400">
+        <Link href="/">Home</Link> <ChevronRight className="w-3 h-3" /> <span>{product.category}</span>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12">
+        {/* Swipe Gallery */}
+        <div className="space-y-4">
+          <div className="aspect-[3/4] bg-[#f9f9f9] overflow-hidden relative group">
+            <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar h-full">
+              {product.images?.map((img: string, i: number) => (
+                <div key={i} className="w-full h-full flex-shrink-0 snap-center">
+                  <img src={img} className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {product.images?.map((img: string, i: number) => (
+              <img key={i} src={img} onClick={() => setSelectedImage(i)} className={`w-20 h-24 object-cover cursor-pointer border-b-2 ${selectedImage === i ? 'border-black' : 'border-transparent'}`} />
+            ))}
+          </div>
         </div>
-        <div className="flex flex-col justify-center">
-          <h1 className="text-4xl font-serif font-bold mb-4 uppercase">{product.title}</h1>
-          <p className="text-2xl text-gold font-bold mb-8 text-[#D4AF37]">Rs. {product.price}</p>
+
+        {/* Info */}
+        <div className="flex flex-col">
+          <h1 className="text-3xl font-serif font-bold mb-2 uppercase tracking-tight">{product.title}</h1>
+          <p className="text-2xl font-serif text-[#bcac76] font-bold mb-6">Rs. {product.price}</p>
           
-          <div className="flex gap-4 mb-10">
-            <button onClick={() => setShowForm(true)} className="flex-1 bg-black text-white py-5 rounded-full font-bold uppercase tracking-widest text-[10px] hover:bg-gold transition-all">Buy It Now</button>
-            <button onClick={() => window.open(`https://wa.me/923035958676`, '_blank')} className="p-5 border border-gray-200 rounded-full hover:bg-gray-50"><Phone className="w-5 h-5" /></button>
+          <div className="border-y border-gray-100 py-6 mb-6">
+            <p className="text-gray-500 text-sm leading-relaxed">{product.description}</p>
+          </div>
+
+          {/* Variations */}
+          <div className="mb-8">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest mb-4">Select Size / Color</h3>
+            <div className="flex flex-wrap gap-2">
+              {product.variations?.map((v: any, i: number) => (
+                <button key={i} onClick={() => setSelectedVariant(v.name)} className={`px-6 py-2 border text-[10px] font-bold uppercase tracking-widest ${selectedVariant === v.name ? 'bg-black text-white' : 'bg-white text-black border-gray-200'}`}>
+                  {v.name} {Number(v.stock) <= 0 ? '(Sold Out)' : ''}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Quantity & Buttons */}
+          <div className="space-y-4">
+            <div className="flex items-center border border-gray-200 w-fit">
+              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-4"><Minus className="w-3 h-3" /></button>
+              <span className="px-6 font-bold">{quantity}</span>
+              <button onClick={() => setQuantity(quantity + 1)} className="p-4"><Plus className="w-3 h-3" /></button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <button onClick={() => alert("Added to Cart!")} className="border-2 border-black py-4 text-[10px] font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-all">Add to Cart</button>
+              <button onClick={() => setShowOrderForm(true)} className="bg-black text-white py-4 text-[10px] font-bold uppercase tracking-widest hover:bg-[#bcac76] transition-all">Buy It Now</button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Checkout Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 relative animate-in zoom-in-95 duration-300">
-            <button onClick={() => setShowForm(false)} className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full"><X className="w-5 h-5" /></button>
-            <h2 className="text-2xl font-serif font-bold mb-2">Complete Your Order</h2>
-            <p className="text-gray-400 text-xs uppercase tracking-widest mb-8">Cash on Delivery</p>
-            
+      {/* Suggestions */}
+      <section className="max-w-7xl mx-auto px-4 mt-20">
+        <h3 className="text-xl font-serif mb-10 border-b pb-4">You May Also Like</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {related.map((p) => (
+            <Link href={`/product/${p.id}`} key={p.id} className="group">
+              <div className="aspect-[3/4] bg-gray-50 mb-4 overflow-hidden"><img src={p.images?.[0]} className="w-full h-full object-cover group-hover:scale-105 transition-all" /></div>
+              <h4 className="text-[10px] font-bold uppercase text-center">{p.title}</h4>
+              <p className="text-center text-[#bcac76] font-bold text-sm mt-1">Rs. {p.price}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Order Form Modal */}
+      {showOrderForm && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-md rounded-3xl p-8 relative">
+            <button onClick={() => setShowOrderForm(false)} className="absolute top-4 right-4"><X /></button>
+            <h2 className="text-xl font-serif font-bold mb-6">Shipping Details</h2>
             <form onSubmit={handlePlaceOrder} className="space-y-4">
-              <input required placeholder="Full Name" className="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-1 ring-black" value={customer.name} onChange={e => setCustomer({...customer, name: e.target.value})} />
-              <input required placeholder="Phone Number" className="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-1 ring-black" value={customer.phone} onChange={e => setCustomer({...customer, phone: e.target.value})} />
-              <input required placeholder="Complete Address" className="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-1 ring-black" value={customer.address} onChange={e => setCustomer({...customer, address: e.target.value})} />
-              <input required placeholder="City" className="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-1 ring-black" value={customer.city} onChange={e => setCustomer({...customer, city: e.target.value})} />
-              <button type="submit" className="w-full bg-[#25D366] text-white py-5 rounded-2xl font-bold uppercase tracking-widest text-xs shadow-lg">Confirm Order</button>
+              <input required placeholder="Full Name" className="w-full p-4 bg-gray-50 rounded-xl outline-none" value={customer.name} onChange={e => setCustomer({...customer, name: e.target.value})} />
+              <input required placeholder="Phone Number" className="w-full p-4 bg-gray-50 rounded-xl outline-none" value={customer.phone} onChange={e => setCustomer({...customer, phone: e.target.value})} />
+              <input required placeholder="Address" className="w-full p-4 bg-gray-50 rounded-xl outline-none" value={customer.address} onChange={e => setCustomer({...customer, address: e.target.value})} />
+              <button type="submit" className="w-full bg-[#25D366] text-white py-4 rounded-xl font-bold uppercase tracking-widest text-xs">Confirm Order (COD)</button>
             </form>
           </div>
-        </div>
-      )}
-
-      {/* Success Message */}
-      {orderSuccess && (
-        <div className="fixed inset-0 bg-white z-[200] flex flex-col items-center justify-center text-center p-6">
-          <CheckCircle2 className="w-20 h-20 text-[#25D366] mb-6" />
-          <h2 className="text-3xl font-serif font-bold mb-2">Order Placed!</h2>
-          <p className="text-gray-500 mb-8">Thank you for shopping. We will contact you soon.</p>
-          <Link href="/" className="bg-black text-white px-10 py-4 rounded-full text-xs font-bold uppercase tracking-widest">Back to Home</Link>
         </div>
       )}
     </div>

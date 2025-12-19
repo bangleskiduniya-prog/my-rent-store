@@ -3,34 +3,24 @@
 @tailwind utilities;
 
 :root {
-  --primary-gold: #D4AF37;
-  --deep-black: #1A1A1A;
-  --soft-white: #FFFFFF;
+  --primary-gold: #bcac76; /* Bin Saif Gold */
+  --deep-black: #111111;
+  --bg-white: #ffffff;
 }
 
 body {
-  background-color: var(--soft-white);
+  background-color: var(--bg-white);
   color: var(--deep-black);
   font-family: 'Inter', sans-serif;
 }
 
 h1, h2, h3, .font-serif {
   font-family: 'Playfair Display', serif;
+  letter-spacing: -0.02em;
 }
 
-/* Premium Button Style */
-.btn-premium {
-  @apply bg-black text-white px-8 py-3 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-[#D4AF37] transition-all duration-500 shadow-lg;
+.btn-gold {
+  @apply bg-[#bcac76] text-white hover:bg-black transition-all duration-500 uppercase tracking-[0.2em] font-bold;
 }
 
-/* WhatsApp Floating Pulse */
-.whatsapp-pulse {
-  box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7);
-  animation: pulse-green 2s infinite;
-}
-
-@keyframes pulse-green {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
-}
+.no-scrollbar::-webkit-scrollbar { display: none; }
