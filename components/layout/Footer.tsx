@@ -1,42 +1,16 @@
-import Link from "next/link";
+"use client";
+import React from 'react';
 
-export function Footer() {
+export default function Footer() {
   return (
-    <footer className="bg-black text-white py-12">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div>
-            <h3 className="text-lg font-bold mb-4">MY RENT STORE</h3>
-            <p className="text-gray-400 text-sm">
-              Premium fashion rentals for every occasion.
-            </p>
-          </div>
-          <div>
-            <h4 className="text-sm font-semibold mb-4">Shop</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link href="/?category=Men" className="hover:text-white">Men</Link></li>
-              <li><Link href="/?category=Women" className="hover:text-white">Women</Link></li>
-              <li><Link href="/?category=Kids" className="hover:text-white">Kids</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-sm font-semibold mb-4">Support</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li><a href="#" className="hover:text-white">Contact Us</a></li>
-              <li><a href="#" className="hover:text-white">FAQs</a></li>
-              <li><a href="#" className="hover:text-white">Terms of Service</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-sm font-semibold mb-4">Contact</h4>
-            <p className="text-sm text-gray-400">
-              Email: support@myrentstore.com<br />
-              WhatsApp: 03035958676
-            </p>
-          </div>
+    <footer className="bg-white border-t border-gray-100 pt-20 pb-10 px-6 text-center">
+      <div className="max-w-7xl mx-auto">
+        <p className="text-gray-400 text-[10px] tracking-[0.5em] uppercase mb-12 font-bold italic">Tradition Meets Modernity</p>
+        <div className="text-[9px] text-gray-300 uppercase tracking-[0.4em] font-medium">
+          © 2025 All Rights Reserved.
         </div>
-        <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-400">
-          &copy; {new Date().getFullYear()} My Rent Store. All rights reserved.
+        <div className="text-[9px] text-[#bcac76] font-bold uppercase tracking-[0.2em] pt-4">
+          Website rent ya apni banwaye: creativejunaid0012@gmail.com
         </div>
       </div>
     </footer>
