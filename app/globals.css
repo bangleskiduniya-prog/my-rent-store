@@ -3,24 +3,25 @@
 @tailwind utilities;
 
 :root {
-  --primary-gold: #bcac76; /* Bin Saif Gold */
-  --deep-black: #111111;
-  --bg-white: #ffffff;
+  --bs-cream: #FDFBF9; /* Bin Saif Background */
+  --bs-gold: #C5A059;  /* Premium Gold */
+  --bs-black: #111111;
+  --bs-gray: #757575;
 }
 
 body {
-  background-color: var(--bg-white);
-  color: var(--deep-black);
+  background-color: var(--bs-cream);
+  color: var(--bs-black);
   font-family: 'Inter', sans-serif;
 }
 
 h1, h2, h3, .font-serif {
   font-family: 'Playfair Display', serif;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
-.btn-gold {
-  @apply bg-[#bcac76] text-white hover:bg-black transition-all duration-500 uppercase tracking-[0.2em] font-bold;
+.btn-premium {
+  @apply bg-[#111111] text-white px-8 py-4 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-[#C5A059] transition-all duration-500 shadow-xl;
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
