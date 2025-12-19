@@ -1,89 +1,104 @@
-import { getProduct, getProducts } from "@/lib/db/products";
-import { getSettings } from "@/lib/db/settings";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { Button } from "@/components/ui/Button";
-import { formatPrice } from "@/lib/utils";
-import { Metadata } from "next";
-import { notFound } from "next/navigation";
-import ImageGallery from "@/components/product/ImageGallery";
-import ProductOptions from "@/components/product/ProductOptions";
+"use client";
+import React, { useEffect, useState } from 'react';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { useParams } from 'next/navigation';
+import { Phone, ChevronRight, ShieldCheck, Truck, Share2 } from 'lucide-react';
+import Link from 'next/link';
 
-// Use generateMetadata for dynamic SEO
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
-  const { id } = await params;
-  const product = await getProduct(id);
+export default function ProductDetails() {
+  const { id } = useParams();
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
 
-  if (!product) {
-    return {
-      title: "Product Not Found",
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!id) return;
+      const docRef = doc(db, "products", id as string);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setProduct({ id: docSnap.id, ...docSnap.data() });
+      }
+      setLoading(false);
     };
-  }
+    fetchProduct();
+  }, [id]);
 
-  return {
-    title: `${product.name} | My Rent Store`,
-    description: product.description,
-    openGraph: {
-      title: product.name,
-      description: product.description,
-      images: product.images.length > 0 ? [product.images[0]] : [],
-      url: `https://my-rent-store.vercel.app/product/${id}`, // Replace with actual domain
-      type: "website",
-    },
+  if (loading) return <div className="h-screen flex items-center justify-center uppercase tracking-[0.3em] text-xs">Loading...</div>;
+  if (!product) return <div className="h-screen flex items-center justify-center">Product not found.</div>;
+
+  const handleWhatsAppOrder = () => {
+    const message = `Hi, I want to order:
+*Product:* ${product.title}
+*Price:* Rs. ${product.price}
+*Variant:* ${selectedVariant || 'Standard'}
+*Link:* https://my-rent-store.vercel.app/product/${product.id}`;
+    window.open(`https://wa.me/923035958676?text=${encodeURIComponent(message)}`, '_blank');
   };
-}
 
-export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const product = await getProduct(id);
-  const settings = await getSettings();
-
-  if (!product) {
-    notFound();
-  }
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({ title: product.title, url: window.location.href });
+    }
+  };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
+    <div className="bg-white min-h-screen pb-20">
+      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between text-[10px] uppercase tracking-widest text-gray-400 border-b border-gray-50">
+        <div className="flex items-center gap-2">
+          <Link href="/" className="hover:text-black">Home</Link>
+          <ChevronRight className="w-3 h-3" />
+          <span className="text-black font-bold">{product.title}</span>
+        </div>
+        <button onClick={handleShare} className="flex items-center gap-2 text-black font-bold"><Share2 className="w-3 h-3" /> Share</button>
+      </div>
 
-      <main className="flex-1 py-12">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="lg:grid lg:grid-cols-2 lg:gap-x-8 lg:items-start">
-            {/* Image Gallery */}
-            <ImageGallery images={product.images} />
-
-            {/* Product Info */}
-            <div className="mt-10 px-4 sm:px-0 sm:mt-16 lg:mt-0">
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900">{product.name}</h1>
-              
-              <div className="mt-3">
-                <h2 className="sr-only">Product information</h2>
-                <p className="text-3xl tracking-tight text-gray-900">{formatPrice(product.price)}</p>
+      <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 mt-8">
+        <div className="space-y-4">
+          <div className="aspect-[3/4] bg-gray-50 overflow-hidden rounded-3xl shadow-sm">
+            <img src={product.images?.[selectedImage]} className="w-full h-full object-cover" alt={product.title} />
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {product.images?.map((img: string, i: number) => (
+              <div key={i} onClick={() => setSelectedImage(i)} className={`w-20 h-20 flex-shrink-0 cursor-pointer rounded-xl overflow-hidden border-2 ${selectedImage === i ? 'border-black' : 'border-transparent'}`}>
+                <img src={img} className="w-full h-full object-cover" />
               </div>
-
-              <div className="mt-6">
-                <h3 className="sr-only">Description</h3>
-                <div className="space-y-6 text-base text-gray-700" dangerouslySetInnerHTML={{ __html: product.description }} />
-              </div>
-
-              <div className="mt-6">
-                 <div className="flex items-center gap-2">
-                    <span className={`inline-block w-3 h-3 rounded-full ${product.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
-                    <span className="text-sm font-medium text-gray-500">
-                        {product.stock > 0 ? `In Stock (${product.stock} available)` : "Out of Stock"}
-                    </span>
-                 </div>
-              </div>
-
-              <div className="mt-8">
-                <ProductOptions product={product} whatsappNumber={settings.whatsappNumber} />
-              </div>
-            </div>
+            ))}
           </div>
         </div>
-      </main>
 
-      <Footer />
+        <div className="flex flex-col justify-center">
+          <h1 className="text-4xl font-serif font-bold text-black mb-4">{product.title}</h1>
+          <p className="text-2xl font-serif text-gold mb-6 font-bold">Rs. {product.price}</p>
+          <div className="border-t border-gray-100 py-8 mb-8">
+            <p className="text-gray-500 text-sm leading-relaxed">{product.description}</p>
+          </div>
+
+          {product.variations && product.variations.length > 0 && (
+            <div className="mb-10">
+              <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-4 text-gray-400">Select Size / Color</h3>
+              <div className="flex flex-wrap gap-3">
+                {product.variations.map((v: any, i: number) => (
+                  <button 
+                    key={i}
+                    disabled={Number(v.stock) <= 0}
+                    onClick={() => setSelectedVariant(v.name)}
+                    className={`px-8 py-3 border text-[10px] font-bold uppercase tracking-widest transition-all rounded-full ${Number(v.stock) <= 0 ? 'opacity-30 cursor-not-allowed' : ''} ${selectedVariant === v.name ? 'bg-black text-white border-black shadow-lg' : 'bg-white text-black border-gray-200 hover:border-black'}`}
+                  >
+                    {v.name} {Number(v.stock) <= 0 ? '(Sold Out)' : ''}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button onClick={handleWhatsAppOrder} className="w-full bg-[#25D366] text-white py-6 rounded-full font-bold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 hover:scale-[1.02] transition-all shadow-xl">
+            <Phone className="w-4 h-4 fill-current" /> Order via WhatsApp
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
